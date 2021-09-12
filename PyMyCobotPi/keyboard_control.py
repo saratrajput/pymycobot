@@ -14,7 +14,8 @@ context = zmq.Context()
 sub = context.socket(zmq.SUB)
 sub.setsockopt(zmq.SUBSCRIBE, b"")
 print("Subscriber connecting...")
-sub.connect("tcp://192.168.0.113:{}".format(port))
+sub.connect("tcp://192.168.0.108:{}".format(port))
+# sub.connect("tcp://192.168.0.113:{}".format(port))
 
 
 class MyCobotPi():
@@ -22,11 +23,11 @@ class MyCobotPi():
         # Initialize MyCobot object
         self.mc = MyCobot(PI_PORT, PI_BAUD)
         # If you decrease speed increase sleep time
-        self.speed = 50
+        self.speed = 30
         self.sleep_time = 2.5
         self.joint_dict = {1: "J1", 2: "J3", 3: "J4", 4: "J5", 5: "J6"}
 
-        self.current_joint = "J1"
+        self.current_joint = 2
 
     def set_zero_position(self):
         # Set zero position and speed
@@ -36,43 +37,45 @@ class MyCobotPi():
         print(self.mc.is_paused())
         time.sleep(2.5)
 
-    # def select_joint(self):
-    #     pass
-    def select_joint(self):
-        pass
-
     def move_joint(self):
-        current_j1_angle = self.mc.get_angles()[0]
-        self.mc.send_angle(Angle.J1.value, current_j1_angle + 5, self.speed)
+        print("Moving joint")
+        self.mc.jog_angle(self.current_joint, 1, self.speed)
 
-    def move_joint_forward(self):
-        pass
+    def stop_movement(self):
+        print("Stopping joint")
+        self.mc.jog_stop()
 
-    def move_joint_backward(self):
-        pass
+    def move_opposite(self):
+        print("Moving joint")
+        self.mc.jog_angle(self.current_joint, 0, self.speed)
 
-
-def on_press(key):
-    try:
-        print('{0} Pressed'.format(
-            key.char))
-    except AttributeError:
-        print('Error. Special Key pressed: {0}'.format(
-            key))
-
-def on_release(key):
-    print('{0} Released'.format(
-        key))
-    if key == keyboard.Key.esc:
-        # Stop listener
-        return False
+    def set_current_joint(self, joint_num):
+        if joint_num != self.current_joint:
+            self.current_joint = joint_num
+            print("Current Joint: {}".format(self.current_joint - 1))
 
 
 if __name__ == "__main__":
     mc = MyCobotPi()
+    mc.set_zero_position()
+
+    last_command = ""
 
     while True:
-        print("Receiving")
         my_string = sub.recv_string()
-        if my_string == "w":
+        my_int = int(my_string)
+
+        if my_string == last_command:
+            continue
+        else:
+            last_command = my_string
+        if my_int > 0 and my_int < 7:
+            # Select Joint
+            mc.set_current_joint(my_int+1) 
+        if my_string == "7":
+            # Forward Jog
             mc.move_joint()
+        elif my_string == "0":
+            mc.stop_movement()
+        elif my_string == "8":
+            mc.move_opposite()
