@@ -7,6 +7,7 @@
         "fomatter",
         "gpio",
         "mesg",
+        "msecs",
         "mycobot",
         "pymycobot",
         "pytest",
@@ -15,5 +16,6 @@
         "yview",
         "zhang"
     ],
-    "restructuredtext.confPath": ""
+    "restructuredtext.confPath": "",
+    "python.formatting.provider": "black"
 }

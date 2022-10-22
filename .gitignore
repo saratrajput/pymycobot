@@ -6,19 +6,21 @@ log
 pymycobot/__pycache__/
 tests/__pycache__/
 
-test.py
+test*.py
 record.txt
 test_test.py
 
 .DS_Store
-
+.history
+*.bat
 .VSCodeCounter
-.vscode/.ropeproject/config.py
-.vscode/.ropeproject/objectdb
+.vscode/
+*.sh
 
+*.pyc
 __pycache__/port.cpython-39.pyc
 demo/__pycache__/port.cpython-39.pyc
 demo/__pycache__/port_setup.cpython-39.pyc
-
 *.pyc
 *.swp
+.idea

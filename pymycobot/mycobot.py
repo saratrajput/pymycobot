@@ -1,42 +1,45 @@
+# coding=utf-8
+
+from __future__ import division
 import time
 import math
 import logging
 
 from pymycobot.log import setup_logging
-from pymycobot.generate import MycobotCommandGenerater
-from pymycobot.common import Command
-from pymycobot.error import check_datas
+from pymycobot.generate import MyCobotCommandGenerator
+from pymycobot.common import ProtocolCode, write, read
+from pymycobot.error import calibration_parameters
 
 
-class MyCobot(MycobotCommandGenerater):
+class MyCobot(MyCobotCommandGenerator):
     """MyCobot Python API Serial communication class.
 
     Supported methods:
 
         # Overall status
-            Look at parent class: `MycobotCommandGenerater`.
+            Look at parent class: `MyCobotCommandGenerator`.
 
         # MDI mode and operation
             get_radians()
             send_radians()
             sync_send_angles() *
             sync_send_coords() *
-            Other look at parent class: `MycobotCommandGenerater`.
+            Other look at parent class: `MyCobotCommandGenerator`.
 
         # JOG mode and operation
-            Look at parent class: `MycobotCommandGenerater`.
+            Look at parent class: `MyCobotCommandGenerator`.
 
         # Running status and Settings
-            Look at parent class: `MycobotCommandGenerater`.
+            Look at parent class: `MyCobotCommandGenerator`.
 
         # Servo control
-            Look at parent class: `MycobotCommandGenerater`.
+            Look at parent class: `MyCobotCommandGenerator`.
 
         # Atom IO
-            Look at parent class: `MycobotCommandGenerater`.
+            Look at parent class: `MyCobotCommandGenerator`.
 
         # Basic
-            Look at parent class: `MycobotCommandGenerater`.
+            Look at parent class: `MyCobotCommandGenerator`.
 
         # Other
             wait() *
@@ -51,28 +54,17 @@ class MyCobot(MycobotCommandGenerater):
             debug    : whether show debug info
         """
         super(MyCobot, self).__init__(debug)
-        self.debug = debug
-        setup_logging(self.debug)
-        self.log = logging.getLogger(__name__)
+        self.calibration_parameters = calibration_parameters
         import serial
+        self._serial_port = serial.Serial()
+        self._serial_port.port = port
+        self._serial_port.baudrate = baudrate
+        self._serial_port.timeout = timeout
+        self._serial_port.rts = False
+        self._serial_port.open()
 
-        self._serial_port = serial.Serial(port, baudrate, timeout=timeout)
-
-    def _write(self, command):
-        self.log.debug("_write: {}".format(command))
-
-        self._serial_port.write(command)
-        self._serial_port.flush()
-        time.sleep(0.05)
-
-    def _read(self):
-        if self._serial_port.inWaiting() > 0:
-            data = self._serial_port.read(self._serial_port.inWaiting())
-            self.log.debug("_read: {}".format(data))
-        else:
-            self.log.debug("_read: no data can be read")
-            data = None
-        return data
+    _write = write
+    _read = read
 
     def _mesg(self, genre, *args, **kwargs):
         """
@@ -86,68 +78,88 @@ class MyCobot(MycobotCommandGenerater):
             **kwargs: support `has_reply`
                 has_reply: Whether there is a return value to accept.
         """
-        real_command, has_reply = super(MyCobot, self)._mesg(genre, *args, **kwargs)
+        real_command, has_reply = super(
+            MyCobot, self)._mesg(genre, *args, **kwargs)
         self._write(self._flatten(real_command))
 
         if has_reply:
-            data = self._read()
+            data = self._read(genre)
+            if genre == ProtocolCode.SET_SSID_PWD:
+                return None
             res = self._process_received(data, genre)
             if genre in [
-                Command.IS_POWER_ON,
-                Command.IS_CONTROLLER_CONNECTED,
-                Command.IS_PAUSED,
-                Command.IS_IN_POSITION,
-                Command.IS_MOVING,
-                Command.IS_SERVO_ENABLE,
-                Command.IS_ALL_SERVO_ENABLE,
-                Command.GET_SERVO_DATA,
-                Command.GET_DIGITAL_INPUT,
-                Command.GET_GRIPPER_VALUE,
-                Command.IS_GRIPPER_MOVING,
-                Command.GET_SPEED,
-                Command.GET_ENCODER,
-                Command.GET_BASIC_INPUT,
+                ProtocolCode.ROBOT_VERSION,
+                ProtocolCode.GET_ROBOT_ID,
+                ProtocolCode.IS_POWER_ON,
+                ProtocolCode.IS_CONTROLLER_CONNECTED,
+                ProtocolCode.IS_PAUSED,  # TODO have bug: return b''
+                ProtocolCode.IS_IN_POSITION,
+                ProtocolCode.IS_MOVING,
+                ProtocolCode.IS_SERVO_ENABLE,
+                ProtocolCode.IS_ALL_SERVO_ENABLE,
+                ProtocolCode.GET_SERVO_DATA,
+                ProtocolCode.GET_DIGITAL_INPUT,
+                ProtocolCode.GET_GRIPPER_VALUE,
+                ProtocolCode.IS_GRIPPER_MOVING,
+                ProtocolCode.GET_SPEED,
+                ProtocolCode.GET_ENCODER,
+                ProtocolCode.GET_BASIC_INPUT,
+                ProtocolCode.GET_TOF_DISTANCE,
+                ProtocolCode.GET_END_TYPE,
+                ProtocolCode.GET_MOVEMENT_TYPE,
+                ProtocolCode.GET_REFERENCE_FRAME,
+                ProtocolCode.GET_JOINT_MIN_ANGLE,
+                ProtocolCode.GET_JOINT_MAX_ANGLE,
+                ProtocolCode.GET_FRESH_MODE
             ]:
                 return self._process_single(res)
-            elif genre in [Command.GET_ANGLES]:
-                return [self._int_to_angle(angle) for angle in res]
-            elif genre in [Command.GET_COORDS]:
+            elif genre in [ProtocolCode.GET_ANGLES]:
+                return [self._int2angle(angle) for angle in res]
+            elif genre in [ProtocolCode.GET_COORDS, ProtocolCode.GET_TOOL_REFERENCE, ProtocolCode.GET_WORLD_REFERENCE]:
                 if res:
                     r = []
                     for idx in range(3):
-                        r.append(self._int_to_coord(res[idx]))
+                        r.append(self._int2coord(res[idx]))
                     for idx in range(3, 6):
-                        r.append(self._int_to_angle(res[idx]))
+                        r.append(self._int2angle(res[idx]))
                     return r
                 else:
                     return res
-            elif genre in [Command.GET_JOINT_MIN_ANGLE, Command.GET_JOINT_MAX_ANGLE]:
-                return self._int_to_angle(res[0]) if res else 0
+            elif genre in [ProtocolCode.GET_SERVO_VOLTAGES]:
+                return [self._int2coord(angle) for angle in res]
             else:
                 return res
         return None
 
     def get_radians(self):
-        """Get all angle return a list
+        """Get the radians of all joints
 
         Return:
-            data_list (list[radian...]):
+            list: A list of float radians [radian1, ...]
         """
-        angles = self._mesg(Command.GET_ANGLES, has_reply=True)
+        angles = self._mesg(ProtocolCode.GET_ANGLES, has_reply=True)
         return [round(angle * (math.pi / 180), 3) for angle in angles]
 
     def send_radians(self, radians, speed):
-        """Send all angles
+        """Send the radians of all joints to robot arm
 
         Args:
-            radians (list): example [0, 0, 0, 0, 0, 0]
-            speed (int): 0 ~ 100
+            radians: a list of radian values( List[float]), length 6
+            speed: (int )0 ~ 100
         """
-        check_datas(len6=radians, speed=speed)
-        degrees = [self._angle_to_int(radian * (180 / math.pi)) for radian in radians]
-        return self._mesg(Command.SEND_ANGLES, degrees, speed)
+        calibration_parameters(len6=radians, speed=speed)
+        degrees = [self._angle2int(radian * (180 / math.pi))
+                   for radian in radians]
+        return self._mesg(ProtocolCode.SEND_ANGLES, degrees, speed)
 
     def sync_send_angles(self, degrees, speed, timeout=7):
+        """Send the angle in synchronous state and return when the target point is reached
+            
+        Args:
+            degrees: a list of degree values(List[float]), length 6.
+            speed: (int) 0 ~ 100
+            timeout: default 7s.
+        """
         t = time.time()
         self.send_angles(degrees, speed)
         while time.time() - t < timeout:
@@ -158,6 +170,14 @@ class MyCobot(MycobotCommandGenerater):
         return self
 
     def sync_send_coords(self, coords, speed, mode, timeout=7):
+        """Send the coord in synchronous state and return when the target point is reached
+            
+        Args:
+            coords: a list of coord values(List[float])
+            speed: (int) 0 ~ 100
+            mode: (int): 0 - angular, 1 - linear
+            timeout: default 7s.
+        """
         t = time.time()
         self.send_coords(coords, speed, mode)
         while time.time() - t < timeout:
@@ -168,22 +188,21 @@ class MyCobot(MycobotCommandGenerater):
 
     # Basic for raspberry pi.
     def gpio_init(self):
-        """Init GPIO module.
-        Raspberry Pi version need this.
-        """
-        import RPi.GPIO as GPIO
+        """Init GPIO module, and set BCM mode."""
+        import RPi.GPIO as GPIO  # type: ignore
 
         GPIO.setmode(GPIO.BCM)
         self.gpio = GPIO
 
     def gpio_output(self, pin, v):
         """Set GPIO output value.
+
         Args:
-            pin: port number(int).
-            v: Output value(int), 1 - GPIO.HEIGH, 2 - GPIO.LOW
+            pin: (int)pin number.
+            v: (int) 0 / 1
         """
         self.gpio.setup(pin, self.gpio.OUT)
-        self.gpio.setup(pin, v)
+        self.gpio.output(pin, v)
 
     # Other
     def wait(self, t):

@@ -1,4 +1,109 @@
-# ChangeLog for pymycobot.
+# ChangeLog for pymycobot
+
+## v2.9.6 (2022-9-13)
+
+- release v2.9.6
+- Fix MyBuddySocket get_radians()、send_radians() BUG
+
+## v2.9.5 (2022-9-13)
+
+- release v2.9.5
+- Add MyBuddy serial open(),is_open() function
+- Add MyBuddy example
+
+## v2.9.4 (2022-9-8)
+
+- release v2.9.4
+- fix read_next_error() bug
+- fix set_ssid_pwd() bug
+
+## v2.9.3 (2022-8-31)
+
+- release v2.9.3
+- fix jog_increment() bug
+- Fixed an incorrect description of the set_fresh_mode interface
+
+## v2.9.2 (2022-8-8)
+
+- release v2.9.2
+- fix bug jog_increment()
+
+## v2.9.1 (2022-8-1)
+
+- release v2.9.1
+- fix MyBuddy read data bug.
+
+## v2.9.0 (2022-8-1)
+
+- release v2.9.0
+
+## v2.8.1 (2022-7-1)
+
+- release v2.8.1
+- Fix MyBuddy send_angles() function BUG
+
+## v2.8.0 (2022-6-28)
+
+- release v2.8.0
+- Added the ability to obtain and set the wifi account password through the serial port
+- Fix mypalletizer class BUG
+- Initial release of mybuddy interface
+
+## v2.7.6 (2022-6-15)
+
+- release v2.7.6
+- Update 320 API
+
+## v2.7.5 (2022-4-29)
+
+- release v2.7.5
+- Fixed an issue where the M5 would restart when the serial port was initialized for the first time.
+- New interface: `get_tool_reference`,`set_tool_reference`,`set_world_reference`,`get_world_reference`,`set_reference_frame`,`get_reference_frame`,`set_movement_type`,`get_movement_type`,`set_end_type`,`get_end_type`,`get_plan_speed`,`get_plan_acceleration`,`set_plan_speed`,`set_plan_acceleration`,`get_servo_speeds`,`get_servo_currents`,`get_servo_voltages`,`get_servo_status`,`get_servo_temps`.
+
+## v2.7.4 (2021-12-15)
+
+- release v2.7.4
+- Fix m5 network communication bug
+
+## v2.7.3 (2021-12-15)
+
+- release v2.7.3
+- fix get_tof_distance() no return problem.
+
+## v2.7.2 (2021-12-15)
+
+- release v2.7.2
+- Added network communication and distance detection functions for m5 and seed versions
+
+## v2.7.1 (2021-11-23)
+
+- release v2.7.1
+- Refactor tcp/ip control method
+- Optimize tcp/ip control gpio
+- Fix the error of get_basic_input() again
+- Added instructions for using MyCobotSocket
+
+## v2.7.0 (2021-11-15)
+
+- release v2.7.0
+- Added TCP/IP to control the robotic arm
+- Fixed the problem that the get_basic_input() and get_digital_input() methods return incorrect data
+
+## v2.6.1 (2021-10-19)
+
+- release v2.6.1
+- Fix transmission angle or coordinate jam problem. (sync_send_angles() and sync_send_coords())
+
+## v2.6.0 (2021-9-13)
+
+- release v2.6.0
+- Preliminary adaptation mypalletizer
+
+## v2.5.9 (2021-08-30)
+- release v2.5.9
+- import `utils` module.
+- modify `send_coord()` for atom4.0
+- update document.
 
 ## v2.5.8 (2021-08-10)
 - release v2.5.8
